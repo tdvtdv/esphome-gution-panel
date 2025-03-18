@@ -1,0 +1,2265 @@
+substitutions:
+  # Данные устройства
+  name: "switch-panel"
+  friendly_name: "Switch panel"
+  device_description: "Switch panel on Guition ESP32-S3-4848S040 platform"
+  
+  timezone:               "Europe/Moscow"  # Название нужной временной зоны можно найти тут https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  
+  # Адрес и токен доступа homeassistant для получения почасового прогноза погоды
+  # токен создвется тут http://<адркс вашего сервера HA>/profile/security  раздел "Долгосрочные токены доступа"
+  ha_address:               "192.168.2.49:8123" 
+  ha_authtoken:             "eyJhbGgnciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhNjgwYmsdgdyNzQ0ZTNlYjdlMmEwZDQzODNhYTcwOSIsImlhdCI6MTc0MDA3MDA1OSwiZXhwIjoyMDU1NDMwMDU5fQ.V-c8AgSzOFuZoNWN37Fx8Tp9pQ64J3bKY09DQPh7WE0"
+  # Используемые сенсоры   
+  sensor_weather:           "weather.yandex_pogoda"      # Сенсор прогноза погоды
+  sensor_sun:               "sun.sun"                    # Сенсор положения солнца
+
+  label_switch1:            "Линия 1"                    # Текст левой кнопки 
+  label_switch2:            "Линия 2"                    # Текст средней кнопки 
+  label_switch3:            "Линия 3"                    # Текст правой кнопки
+
+
+  project_name: "TDV.Gution-Switch"
+  project_version: "1.0.0"
+
+  # Всякие иконки из шрифтов
+  wifi_0:                   "\U000F092F"
+  wifi_25:                  "\U000F091F" 
+  wifi_50:                  "\U000F0922" 
+  wifi_75:                  "\U000F0925" 
+  wifi_100:                 "\U000F0928" 
+  lock:                     "\U000F033E"
+  ha:                       "\U000F07D0"
+
+  switch_on:                "\U000F1A25"
+  switch_off:               "\U000F1A26"
+  
+  weather_night:            "\U000F0594"
+  weather_cloudy:           "\U000F0590"
+  weather_fog:              "\U000F0591"
+  weather_hail:             "\U000F0592"
+  weather_lightning:        "\U000F0593"
+  weather_lightning_rainy:  "\U000F067E"
+  weather_partlycloudy_n:   "\U000F0F31"
+  weather_partlycloudy_d:   "\U000F0595"
+  weather_pouring:          "\U000F0596"
+  weather_rainy:            "\U000F0597"
+  weather_snowy:            "\U000F0598"
+  weather_snowy_rainy:      "\U000F067F"
+  weather_sunny:            "\U000F0599"
+  weather_windy:            "\U000F059D"
+  weather_windy_variant:    "\U000F059E"
+
+#-------------------------------------------
+# Цвета
+#-------------------------------------------
+color:
+  - id: color_wifiactive
+    hex: "ff9800"
+  - id: color_haactive
+    hex: "03a9f4"
+  - id: color_amber        # Цвет индикатора яркости
+    hex: "f4a900"
+  - id: color_panelarea    # Цвет фона панели накладювающийся на фоновое излбражение
+    hex: "000000"
+  - id: color_inactive     # Цвет неактивного объекта управления
+    hex: "606060"
+  - id: color_active       # Цвет активного(включенного) объекта управления
+    hex: "ff9800"
+  - id: color_passive      # Цвет пассивного(отключенного) объекта управления
+    hex: "44739e"
+  - id: color_neutralline  # Цвет сочитающийся с фоновым изображение для отрисовки линий и т.п.
+    hex: "661bd2"
+  - id: color_text         # Цвет текста
+    hex: "808080"
+  - id: color_lockscreen   # Цвет экрана блокировки
+    hex: "000000"
+  - id: color_clock        # Цвет времени
+    hex: "661bd2"
+  - id: color_calendar     # Цвет текста календаря
+    hex: "661bd2"
+  - id: color_weather      # Цвет текста информации о погоде
+    hex: "661bd2"
+  - id: color_weatherchart # Цвет линии графика температуры прогноза погоды
+    hex: "661bd2"
+  - id: color_weathertext  # Цвет текста и значков на графике прогноза погоды
+    hex: "808080"
+  - id: color_weatherzebra # Цвет блоков "зебры" на графике прогноза погоды (накладывается эффет прозрачности 90%)
+    hex: "bfcdfb"
+  - id: color_weathericon_clear
+    hex: "aeae46"
+  - id: color_weathericon_rain
+    hex: "5050c8"
+  - id: color_weathericon_snowy
+    hex: "acacac"
+  - id: color_weathericon_ordinal
+    hex: "808080"
+
+
+
+globals:
+  - id: lock_mode
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+esphome:
+  name: "${name}"
+  friendly_name: "${friendly_name}"
+  #name_add_mac_suffix: true
+  project:
+    name: "${project_name}"
+    version: "${project_version}"
+  platformio_options:
+    board_build.flash_mode: dio
+
+esp32:
+  board: esp32-s3-devkitc-1
+  variant: esp32s3
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      COMPILER_OPTIMIZATION_SIZE: y
+      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32S3_DATA_CACHE_64KB: "y"
+      CONFIG_ESP32S3_DATA_CACHE_LINE_64B: "y"
+      CONFIG_SPIRAM_FETCH_INSTRUCTIONS: y
+      CONFIG_SPIRAM_RODATA: y
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+logger:
+
+api:
+  on_client_connected:
+    - logger.log:
+        format: "Client %s connected to API with IP %s"
+        args: ["client_info.c_str()", "client_address.c_str()"]    
+    - if:
+        condition:
+          lambda: 'return (0 == client_info.find("Home Assistant "));'
+        then:
+          - lvgl.label.update: 
+              id: ha_status
+              text_color: color_haactive
+          - lvgl.resume:
+  on_client_disconnected:
+    - if:
+        condition:
+          lambda: 'return (0 == client_info.find("Home Assistant "));'
+        then:
+          - lvgl.label.update: 
+              id: ha_status
+              text_color: color_inactive
+  #encryption:
+  #  key: !secret encryption_key
+
+ota:
+  platform: esphome
+  password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  on_connect:
+    then:
+      - lvgl.label.update:
+          id: ip_address
+          text:
+            format: "%s"
+            args: [ 'id(ts_wifi_address).state.c_str()' ]                
+      - lvgl.label.update:
+          id: wifi_ssid
+          text:
+            format: "%s"
+            args: [ 'id(ts_wifi_ssid).state.c_str()' ]                
+      - lvgl.label.update:
+          id: wifi_mac
+          text:
+            format: "%s"
+            args: [ 'id(ts_wifi_mac).state.c_str()' ]                
+
+#web_server:
+#  port: 80
+#  local: true 
+
+#------------------------------------------- 
+# Time server
+#------------------------------------------- 
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: ${timezone}
+    servers:
+     - ntp0.ntp-servers.net
+     - ntp1.ntp-servers.net
+     - ntp2.ntp-servers.net
+    on_time_sync:
+      - script.execute: time_updatesec
+      - script.execute: time_update
+      - script.execute: update_weather_forecast
+    on_time:
+      # Таймер каждую минуту для обновления времени (включая стрелки часовую и минутную)
+      - minutes: '*'
+        seconds: 0
+        then:
+          - script.execute: time_update    
+      # Таймер каждую секунду  для обновления секундной стрелки часов
+      - seconds: '*'
+        then:
+          - script.execute: time_updatesec    
+      # Таймер каждую 10 минуту для обновления прогноза погоды
+      - seconds: 0
+        minutes: /10
+        then:
+          - script.execute: update_weather_forecast
+
+#------------------------------------------- 
+# Binary sensor 
+#------------------------------------------- 
+binary_sensor: 
+  - platform: template
+    name: Device is active
+    #device_class: light
+    condition:
+      light.is_on: backlight
+    #lambda: |-
+    #  float br;
+    #  id(backlight).current_values_as_brightness(&br);
+    #  return br>0;
+#------------------------------------------- 
+# Sensors 
+#------------------------------------------- 
+sensor:
+  # WI-FI Signal
+  - platform: wifi_signal
+    id: wifi_signal_percent
+    internal: true
+    update_interval: 30s
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "%"
+    on_value: 
+      then:
+        - lvgl.label.update:
+            id: wifi_status
+            text_color: !lambda |-
+              if (id(wifi_signal_percent).state > 0) 
+               {
+                auto clr=id(color_wifiactive);
+                return lv_color_make(clr.r,clr.g,clr.b);
+               }
+              else 
+               {
+                auto clr=id(color_inactive);
+                return lv_color_make(clr.r,clr.g,clr.b);
+               }
+            text: !lambda |-
+              if(!id(lock_mode))
+               {
+                if (id(wifi_signal_percent).state > 0 && id(wifi_signal_percent).state < 26)       return "${wifi_25}";
+                else if (id(wifi_signal_percent).state > 25 && id(wifi_signal_percent).state < 51) return "${wifi_50}";
+                else if (id(wifi_signal_percent).state > 50 && id(wifi_signal_percent).state < 76) return "${wifi_75}";
+                else if (id(wifi_signal_percent).state > 75) return "${wifi_100}";
+                else return "${wifi_0}";
+               }
+              else return "${lock}";
+
+
+  # Прогноз температуры 
+  - platform: homeassistant
+    id: weather_temp
+    entity_id: ${sensor_weather} 
+    attribute: temperature
+    on_value: 
+      then:
+        - lvgl.label.update:
+            id: weathertemp
+            text: #"-33°c"
+              format: "%d°" #%d c
+              args: [(int)id(weather_temp).state]          
+#------------------------------------------- 
+# Текстовы сенсоры
+#------------------------------------------- 
+text_sensor:
+  # Данные о wifi сети
+  - platform: wifi_info
+    ip_address:
+      id: ts_wifi_address
+      internal: true
+    ssid:
+      id: ts_wifi_ssid
+      internal: true
+    mac_address:
+      id: ts_wifi_mac
+      internal: true
+
+  # Сенсор положения солнца
+  - platform: homeassistant
+    id: sun_state
+    entity_id: "${sensor_sun}"
+    on_value:   
+      then:
+      - if:
+          condition:
+            lambda: return (id(weather_state).state.c_str() == "partlycloudy");
+          then:
+            - lvgl.label.update:
+                id: weather
+                text: !lambda |-
+                  auto sun=id(sun_state).state;
+                  return (sun=="below_horizon")?"${weather_partlycloudy_n}":"${weather_partlycloudy_d}";
+
+  # Сенсор погоды
+  - platform: homeassistant
+    id: weather_state
+    entity_id: "${sensor_weather}"
+    on_value:   
+      then:
+        - lvgl.label.update:
+            id: weather
+            text: !lambda |-
+              auto sun=id(sun_state).state;
+              auto wth=id(weather_state).state;
+              if(wth=="clear-night") return "${weather_night}";
+              else if(wth=="cloudy") return "${weather_cloudy}";
+              else if(wth=="fog") return "${weather_fog}";
+              else if(wth=="hail") return "${weather_hail}";
+              else if(wth=="lightning") return "${weather_lightning}";
+              else if(wth=="lightning-rainy") return "${weather_lightning_rainy}";
+              else if(wth=="partlycloudy") return (sun=="below_horizon")?"${weather_partlycloudy_n}":"${weather_partlycloudy_d}";
+              else if(wth=="pouring") return "${weather_pouring}";
+              else if(wth=="rainy") return "${weather_rainy}";
+              else if(wth=="snowy") return "${weather_snowy}";
+              else if(wth=="snowy-rainy") return "${weather_snowy_rainy}";
+              else if(wth=="sunny") return "${weather_sunny}";
+              else if(wth=="windy") return "${weather_windy}";
+              else if(wth=="windy-variant") return "${weather_windy_variant}";
+              else if(wth=="exceptional") return (sun=="below_horizon")?"${weather_night}":"${weather_sunny}";
+              return " ";
+              /*return "${weather_night}";*/
+            text_color: !lambda |-
+              auto iconclr=id(color_weathericon_ordinal);
+              auto wth=id(weather_state).state;
+              if(wth=="clear-night") iconclr=id(color_weathericon_clear);
+              else if(wth=="hail") iconclr=id(color_weathericon_snowy);
+              else if(wth=="lightning-rainy") iconclr=id(color_weathericon_rain);
+              else if(wth=="pouring") iconclr=id(color_weathericon_rain);
+              else if(wth=="rainy") iconclr=id(color_weathericon_rain);
+              else if(wth=="snowy") iconclr=id(color_weathericon_snowy);
+              else if(wth=="snowy-rainy") iconclr=id(color_weathericon_rain);
+              else if(wth=="sunny") iconclr=id(color_weathericon_clear);
+              else if(wth=="windy") iconclr=id(color_weathericon_clear);
+              else if(wth=="exceptional") iconclr=id(color_weathericon_clear);
+              return lv_color_make(iconclr.r,iconclr.g,iconclr.b);            
+
+http_request:
+  useragent: esphome/device
+  timeout: 10s
+#-------------------------------------------
+# Scripts  https://github.com/trip5/ESPHome-eInk-Boards/blob/main/HomeAssistant_template_weather.yaml#L30
+#-------------------------------------------
+script:
+  - id: update_weather_forecast
+    then:
+      - logger.log: "Requested forecast data..."
+      - http_request.post:
+          url: "http://${ha_address}/api/services/weather/get_forecasts?return_response=null"  
+          capture_response: true
+          max_response_buffer_size: 10240
+          headers:
+            Content-Type: application/json
+            Authorization: Bearer ${ha_authtoken}
+          json:
+            entity_id: ${sensor_weather}
+            type: hourly
+          on_response:
+            - if:
+                condition:
+                   lambda: return response->status_code == 200;
+                then:
+                  - lambda: |-
+                      json::parse_json(body, [](JsonObject root) -> bool
+                      {
+                        bool isok=false;
+                        if(root["service_response"]&&root["service_response"]["${sensor_weather}"]&&root["service_response"]["${sensor_weather}"]["forecast"])
+                        {
+                          JsonArray f=root["service_response"]["${sensor_weather}"]["forecast"];
+
+                          if(f.size()>0)
+                          {
+                            int min_t,max_t;
+                            const int maxpoints=15;
+                            struct 
+                             {
+                              int t;
+                              int h;
+                              int c;
+                             } rawdata[maxpoints];
+                            int pcount=0;
+                            for(int i=0;i<f.size()&&i<maxpoints;i++) 
+                            {
+                               JsonObject item=f[i];
+                               const char* datetime=item["datetime"];
+                               int year, month, day, hour, minute, second, tz_offset_hours, tz_offset_minutes;
+                               sscanf(datetime, "%d-%d-%dT%d:%d:%d%d:%d", &year, &month, &day, &hour, &minute, &second, &tz_offset_hours, &tz_offset_minutes);
+
+                               /* Присвоим коды погодным условиям руководствуясь принципом чем погода хуже тем код меньше */
+                               const char* c=item["condition"];
+                               if(strcmp(c,"snowy-rainy")==0)          rawdata[i].c=1;
+                               else if(strcmp(c,"pouring")==0)         rawdata[i].c=2;
+                               else if(strcmp(c,"lightning-rainy")==0) rawdata[i].c=3;
+                               else if(strcmp(c,"rainy")==0)           rawdata[i].c=4;
+                               else if(strcmp(c,"hail")==0)            rawdata[i].c=5;
+                               else if(strcmp(c,"snowy")==0)           rawdata[i].c=6;
+                               else if(strcmp(c,"lightning")==0)       rawdata[i].c=7;
+                               else if(strcmp(c,"fog")==0)             rawdata[i].c=8;
+                               else if(strcmp(c,"windy-variant")==0)   rawdata[i].c=9;
+                               else if(strcmp(c,"windy")==0)           rawdata[i].c=10;
+                               else if(strcmp(c,"cloudy")==0)          rawdata[i].c=11;
+                               else if(strcmp(c,"partlycloudy")==0)    rawdata[i].c=(hour>18||hour<6)?12:13;
+                               else if(strcmp(c,"clear-night")==0)     rawdata[i].c=14;
+                               else if(strcmp(c,"sunny")==0)           rawdata[i].c=15;
+                               else if(strcmp(c,"exceptional")==0)     rawdata[i].c=(hour>18||hour<6)?14:15;
+                               else rawdata[i].c=99;
+                               
+                               rawdata[i].t=(int)(float)item["temperature"];
+                               rawdata[i].h=hour;
+
+                               if(i==0||rawdata[i].t<min_t) min_t=rawdata[i].t;
+                               if(i==0||rawdata[i].t>max_t) max_t=rawdata[i].t;
+                               pcount++;
+                            }
+
+                            if(pcount>1) 
+                            {
+                              isok=true;
+
+                              /*Приходится сразу включить отображение виджета чтоб корректно определился его размер*/
+                              lv_obj_add_flag(id(weather_forecastnodata), LV_OBJ_FLAG_HIDDEN);   
+                              lv_obj_clear_flag(id(weather_forecastchart), LV_OBJ_FLAG_HIDDEN);
+
+                              auto line=id(weather_chart);
+                              auto area=id(weather_forecastchart);
+                              /* Узнаем размер виджета линии */
+                              lv_coord_t width = lv_obj_get_width(area); 
+                              lv_coord_t height = lv_obj_get_height(line);
+
+                              /* Подготовим массив точек графика */
+                              static lv_point_t new_points[maxpoints];
+                              for(int i=0;i<maxpoints;i++) new_points[i].x=new_points[i].y=0;
+
+                              float hr_step=width/(maxpoints-1);
+                              float px=0;
+                              for(int i=0;i<pcount;i++)
+                              {
+                                new_points[i].x=(int)px;
+                                if((max_t-min_t)==0) new_points[i].y=(int)height-height/2;
+                                else new_points[i].y=(int)height-(height/(max_t-min_t)*(rawdata[i].t-min_t));
+                                px+=hr_step;
+
+                                static char buf[10];
+                                snprintf(buf, sizeof(buf), "%02d",(int)rawdata[i].h);
+                                static char buf_t[10];
+                                snprintf(buf_t, sizeof(buf_t), "%d°",(int)rawdata[i].t);
+                                static char buf_i[10];
+                                auto iconclr=id(color_weathericon_ordinal);
+                                if(i>0)
+                                {
+                                switch(min(rawdata[i-1].c,rawdata[i].c))  
+                                  {
+                                    case 1: iconclr=id(color_weathericon_rain);      strcpy(buf_i,"${weather_snowy_rainy}");break;
+                                    case 2: iconclr=id(color_weathericon_rain);      strcpy(buf_i,"${weather_pouring}");break;
+                                    case 3: iconclr=id(color_weathericon_rain);      strcpy(buf_i,"${weather_lightning_rainy}");break;
+                                    case 4: iconclr=id(color_weathericon_rain);      strcpy(buf_i,"${weather_rainy}");break;
+                                    case 5: iconclr=id(color_weathericon_snowy);     strcpy(buf_i,"${weather_hail}");break;
+                                    case 6: iconclr=id(color_weathericon_snowy);     strcpy(buf_i,"${weather_snowy}");break;
+                                    case 7: iconclr=id(color_weathericon_ordinal);   strcpy(buf_i,"${weather_lightning}");break;
+                                    case 8: iconclr=id(color_weathericon_ordinal);   strcpy(buf_i,"${weather_fog}");break;
+                                    case 9: iconclr=id(color_weathericon_ordinal);   strcpy(buf_i,"${weather_windy_variant}");break;
+                                    case 10: iconclr=id(color_weathericon_clear);    strcpy(buf_i,"${weather_windy}");break;
+                                    case 11: iconclr=id(color_weathericon_ordinal);  strcpy(buf_i,"${weather_cloudy}");break;
+                                    case 12: iconclr=id(color_weathericon_ordinal);  strcpy(buf_i,"${weather_partlycloudy_n}");break;
+                                    case 13: iconclr=id(color_weathericon_ordinal);  strcpy(buf_i,"${weather_partlycloudy_d}");break;
+                                    case 14: iconclr=id(color_weathericon_clear);    strcpy(buf_i,"${weather_night}");break;
+                                    case 15: iconclr=id(color_weathericon_clear);    strcpy(buf_i,"${weather_sunny}");break;
+                                    default: strcpy(buf_i," ");break;
+                                  }
+                                } 
+                              else {iconclr=id(color_weathericon_ordinal);strcpy(buf_i," ");}
+
+                              auto lv_iclr=lv_color_make(iconclr.r,iconclr.g,iconclr.b); 
+
+                              switch(i)
+                                {
+                                case 1:  lv_label_set_text(id(weather_hr_2),buf);  lv_label_set_text(id(weather_t_2),buf_t);  lv_label_set_text(id(weather_i_2),buf_i); lv_obj_set_style_text_color(id(weather_i_2),lv_iclr,0);break; 
+                                case 3:  lv_label_set_text(id(weather_hr_4),buf);  lv_label_set_text(id(weather_t_4),buf_t);  lv_label_set_text(id(weather_i_4),buf_i); lv_obj_set_style_text_color(id(weather_i_4),lv_iclr,0);break;
+                                case 5:  lv_label_set_text(id(weather_hr_6),buf);  lv_label_set_text(id(weather_t_6),buf_t);  lv_label_set_text(id(weather_i_6),buf_i); lv_obj_set_style_text_color(id(weather_i_6),lv_iclr,0);break;
+                                case 7:  lv_label_set_text(id(weather_hr_8),buf);  lv_label_set_text(id(weather_t_8),buf_t);  lv_label_set_text(id(weather_i_8),buf_i); lv_obj_set_style_text_color(id(weather_i_8),lv_iclr,0);break;
+                                case 9:  lv_label_set_text(id(weather_hr_10),buf); lv_label_set_text(id(weather_t_10),buf_t); lv_label_set_text(id(weather_i_10),buf_i);lv_obj_set_style_text_color(id(weather_i_10),lv_iclr,0);break;
+                                case 11: lv_label_set_text(id(weather_hr_12),buf); lv_label_set_text(id(weather_t_12),buf_t); lv_label_set_text(id(weather_i_12),buf_i);lv_obj_set_style_text_color(id(weather_i_12),lv_iclr,0);break;
+                                case 13: lv_label_set_text(id(weather_hr_14),buf); lv_label_set_text(id(weather_t_14),buf_t); lv_label_set_text(id(weather_i_14),buf_i);lv_obj_set_style_text_color(id(weather_i_14),lv_iclr,0);break;
+                                }
+                              //ESP_LOGI("cal", "%d %d",(int)new_points[i].x,(int)new_points[i].y);
+                              }
+                              
+                              lv_line_set_points(line, new_points,pcount);
+                            }
+                          }
+                        } else ESP_LOGI("cal", "Weather forecast parse error. missing 'service_response' node");
+
+                        if(!isok) {lv_obj_clear_flag(id(weather_forecastnodata), LV_OBJ_FLAG_HIDDEN); lv_obj_add_flag(id(weather_forecastchart), LV_OBJ_FLAG_HIDDEN);}
+
+                        return true;
+                      }); 
+          on_error:
+            then:
+              - logger.log: "Weather forecast Request failed!"
+              - lambda: |-
+                  lv_obj_clear_flag(id(weather_forecastnodata), LV_OBJ_FLAG_HIDDEN);
+                  lv_obj_add_flag(id(weather_forecastchart), LV_OBJ_FLAG_HIDDEN);
+
+  - id: time_updatesec
+    then:
+    # Часы экрана блокировки  
+    - lvgl.indicator.update:
+          id: second_hand
+          value: !lambda |-             
+            return id(sntp_time).now().second;
+  - id: time_update
+    then:
+    # Часы экрана блокировки  
+    - lvgl.indicator.update:
+          id: minute_hand
+          value: !lambda |-
+            return id(sntp_time).now().minute;
+    - lvgl.indicator.update:
+        id: hour_hand
+        value: !lambda |-
+          auto now = id(sntp_time).now();
+          return std::fmod(now.hour, 12) * 60 + now.minute;            
+    # Часы отновного экрана
+    - lvgl.label.update:
+        id: display_time
+        text: !lambda |-
+          static char time_buf[16];
+          auto now = id(sntp_time).now();            
+          snprintf(time_buf, sizeof(time_buf), "%02d:%02d", now.hour, now.minute);
+          return time_buf;
+    - lvgl.label.update:
+        id: display_day
+        text: !lambda |-
+          static const char * const days[] = {"Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"};
+          static char date_buf[32];
+          auto now = id(sntp_time).now();
+          snprintf(date_buf, sizeof(date_buf), "%s", days[now.day_of_week - 1]);
+          return date_buf;
+    - lvgl.label.update:
+        id: display_monthday
+        text: !lambda |-
+          static char month_buf[32];
+          auto now = id(sntp_time).now();
+          snprintf(month_buf, sizeof(month_buf), "%d", now.day_of_month);
+          return month_buf;
+    - lvgl.label.update:
+        id: display_month
+        text: !lambda |-
+          static char month_buf[32];
+          static const char * const mon_names[] = {"Янв", "Фев", "Мар", "Апр", "Мая", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"};
+          auto now = id(sntp_time).now();
+          snprintf(month_buf, sizeof(month_buf), "%s",mon_names[now.month-1]);
+          return month_buf;
+
+#-------------------------------------------
+# Internal outputs
+#-------------------------------------------
+output:
+  # Backlight LED
+  - platform: ledc
+    pin: GPIO38
+    id: GPIO38
+    frequency: 100Hz
+
+#-------------------------------------------
+# Numbers
+#-------------------------------------------
+number:
+  - platform: template
+    id: turns_off_timeout
+    name: Screen turns off timeout
+    optimistic: true
+    unit_of_measurement: "s"
+    initial_value: 180
+    restore_value: true
+    min_value: 0
+    max_value: 600
+    step: 5
+    mode: box
+    entity_category : CONFIG
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: turns_off_timeout_label
+            text: !lambda return esphome::to_string((int)x);
+
+  - platform: template
+    id: dimming_timeout
+    name: Backlight dimming timeout
+    optimistic: true
+    unit_of_measurement: "s"
+    initial_value: 180
+    restore_value: true
+    min_value: 0
+    max_value: 600
+    step: 5
+    mode: box
+    entity_category : CONFIG
+    on_value:
+      then:
+        - lvgl.label.update:
+            id: dimming_timeout_label 
+            text: !lambda return esphome::to_string((int)x);
+
+  - platform: template
+    id: dispbr_full
+    name: Full backlight brightness
+    optimistic: true
+    unit_of_measurement: "%"
+    initial_value: 90
+    restore_value: true
+    min_value: 30
+    max_value: 100
+    step: 1
+    mode: auto
+    entity_category : CONFIG
+    on_value:
+      then:
+        - lvgl.slider.update:
+            id: scfull_slider 
+            value : !lambda return (int)x;
+        - lvgl.resume:    
+  - platform: template
+    id: dispbr_dimmed
+    name: Dimmed backlight brightness
+    optimistic: true
+    unit_of_measurement: "%"
+    initial_value: 50
+    restore_value: true
+    min_value: 30
+    max_value: 100
+    step: 1
+    mode: auto
+    entity_category : CONFIG
+    on_value:
+      then:
+        - lvgl.slider.update:
+            id: scdimmer_slider 
+            value : !lambda return (int)x;
+        - lvgl.resume:    
+    
+#-------------------------------------------
+# Internal lights
+#-------------------------------------------
+
+light:
+  # Внутренний диммер управления подсветкой
+  - platform: monochromatic
+    output: GPIO38
+    name: Backlight
+    id: backlight
+    internal: true
+    restore_mode: RESTORE_DEFAULT_ON
+    on_turn_off:
+      then:      
+        - lvgl.pause:
+        - logger.log: LVGL is paused by light sensor
+    on_turn_on:
+      then:      
+        - lvgl.resume:
+        - logger.log: LVGL is resumed by light sensor
+
+#-------------------------------------------
+# Buttons 
+#-------------------------------------------
+button:
+  # Команда пробужденя(включения) экрана или сброс таймера отключения(приглушения)
+  - platform: template
+    name: Wake up device
+    # Optional variables:
+    icon: "mdi:asterisk"
+    on_press:
+      - lvgl.resume:
+      - logger.log: LVGL is resumed by button command 
+
+#-------------------------------------------
+# Switchs 
+#-------------------------------------------
+
+switch:
+  # Перезагрузка устройства
+  - platform: restart
+    id: devrestart
+    internal: true
+  # Управление реле на канале 3(пин 1)
+  - platform: gpio
+    name: Internal relay 3
+    id: internal_relay3
+    restore_mode: restore_default_off    
+    internal: false
+    pin:
+      number: 1
+      inverted: false
+      mode:
+        output: true
+    on_turn_on:
+      then:
+        - lvgl.widget.update:
+            id: switch3_label
+            text_color: color_active
+        - lvgl.widget.update:
+            id: switch3_label2
+            text_color: color_active
+    on_turn_off:
+      then:
+        - lvgl.widget.update:
+            id: switch3_label
+            text_color: color_passive
+        - lvgl.widget.update:
+            id: switch3_label2
+            text_color: color_passive
+  # Управление реле на канале 2 (пин 2)
+  - platform: gpio
+    name: Internal relay 2
+    id: internal_relay2
+    restore_mode: restore_default_off    
+    internal: false
+    pin:
+      number: 2
+      inverted: false
+      mode:
+        output: true
+    on_turn_on:
+      then:
+        - lvgl.widget.update:
+            id: switch2_label
+            text_color: color_active
+        - lvgl.widget.update:
+            id: switch2_label2
+            text_color: color_active
+    on_turn_off:
+      then:
+        - lvgl.widget.update:
+            id: switch2_label
+            text_color: color_passive
+        - lvgl.widget.update:
+            id: switch2_label2
+            text_color: color_passive
+  # Управление реле на канале 1(пин 40)
+  - platform: gpio
+    name: Internal relay 1
+    id: internal_relay1
+    restore_mode: restore_default_off    
+    internal: false
+    pin:
+      number: 40
+      inverted: false
+      mode:
+        output: true
+    on_turn_on:
+      then:
+        - lvgl.widget.update:
+            id: switch1_label
+            text_color: color_active
+        - lvgl.widget.update:
+            id: switch1_label2
+            text_color: color_active
+    on_turn_off:
+      then:
+        - lvgl.widget.update:
+            id: switch1_label
+            text_color: color_passive
+        - lvgl.widget.update:
+            id: switch1_label2
+            text_color: color_passive
+
+#-------------------------------------------
+# Картинки
+#-------------------------------------------
+image:
+  - file: "img/bg_cfg.png"
+    id: bg_cfg
+    type: RGB565
+    #use_transparency: False
+  - file: "img/bg_main.png"
+    id: bg_main
+    type: RGB565
+    #use_transparency: False
+
+#-------------------------------------------
+# Шрифты 
+#-------------------------------------------
+font:
+  - file: "https://github.com/Pictogrammers/pictogrammers.github.io/raw/refs/heads/main/@mdi/font/7.4.47/fonts/materialdesignicons-webfont.ttf" #"fonts/materialdesignicons-webfont.ttf"
+    id: smallicon
+    size: 24
+    bpp: 8
+    glyphs:
+      [
+        "\U000F092F", # wifi signal (empty)
+        "\U000F091F", # wifi signal from 25% to 1%
+        "\U000F0922", # wifi signal from 50% to 25%
+        "\U000F0925", # wifi signal from 75% to 50%
+        "\U000F0928", # wifi signal from 100% to 75% or disable
+        "\U000F033E", # mdi-lock
+        "\U000F07D0", # mdi-home-assistant
+        "\U000F0594", # weather_night
+        "\U000F0590", # weather_cloudy
+        "\U000F0591", # weather_fog
+        "\U000F0592", # weather_hail
+        "\U000F0593", # weather_lightning
+        "\U000F067E", # weather_lightning_rainy
+        "\U000F0F31", # weather_partlycloudy_n
+        "\U000F0595", # weather_partlycloudy_d
+        "\U000F0596", # weather_pouring
+        "\U000F0597", # weather_rainy
+        "\U000F0598", # weather_snowy
+        "\U000F067F", # weather_snowy_rainy
+        "\U000F0599", # weather_sunny
+        "\U000F059D", # weather_windy
+        "\U000F059E", # weather_windy_variant
+      ]
+    extras: # Добавим к символам знак пробела         
+      - file: "fonts/Roboto-Regular.ttf"
+        glyphs: [" "]
+
+  - file: "https://github.com/Pictogrammers/pictogrammers.github.io/raw/refs/heads/main/@mdi/font/7.4.47/fonts/materialdesignicons-webfont.ttf" #"fonts/materialdesignicons-webfont.ttf"
+    id: bigicon
+    size: 80
+    bpp: 4
+    glyphs:
+      [
+        "\U000F1A25", # switch on
+        "\U000F1A26", # switch off
+
+        "\U000F0594", # weather_night
+        "\U000F0590", # weather_cloudy
+        "\U000F0591", # weather_fog
+        "\U000F0592", # weather_hail
+        "\U000F0593", # weather_lightning
+        "\U000F067E", # weather_lightning_rainy
+        "\U000F0F31", # weather_partlycloudy_n
+        "\U000F0595", # weather_partlycloudy_d
+        "\U000F0596", # weather_pouring
+        "\U000F0597", # weather_rainy
+        "\U000F0598", # weather_snowy
+        "\U000F067F", # weather_snowy_rainy
+        "\U000F0599", # weather_sunny
+        "\U000F059D", # weather_windy
+        "\U000F059E", # weather_windy_variant
+      ]
+    extras: # Добавим к символам знак пробела            
+      - file: "gfonts://Roboto@regular"
+        glyphs: [" "]
+
+  - file: "gfonts://Roboto@Regular" #"fonts/Roboto-Regular.ttf"
+    id: font_text
+    size: 20
+    bpp: 4
+    glyphs: |-
+      !"%()+=,-_.:°0123456789АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧЩЬЫЪЭЮЯABCDEFGHIJKLMNOPQRSTUVWXYZ абвгдеёжзийклмнопрстуфхцчшщьыъэюяabcdefghijklmnopqrstuvwxyz'éèàòùç/&ôœìïöñ
+
+  - file: "gfonts://Roboto@bold" #"fonts/Roboto-Bold.ttf"
+    id: font_clock
+    size: 50
+    glyphs: |-
+      0123456789:.-c C°
+  - file: "gfonts://Roboto@bold" #"fonts/Roboto-Bold.ttf"
+    id: font_calendar
+    size: 30
+    glyphs: |-
+      0123456789 -
+
+#-------------------------------------------
+# Touchscreen gt911 i2c
+#-------------------------------------------
+i2c:
+  - id: bus_a
+    sda: GPIO19
+    scl: GPIO45
+    #frequency: 100kHz
+
+touchscreen:
+  platform: gt911
+  transform:
+    mirror_x: false
+    mirror_y: false
+  id: my_touchscreen
+  display: my_display
+
+  on_touch:
+    - logger.log:
+        format: Touch at (%d, %d)
+        args: [touch.x, touch.y]
+    - lambda: ESP_LOGI("cal", "x=%d, y=%d, x_raw=%d, y_raw=%0d", touch.x, touch.y, touch.x_raw, touch.y_raw );
+    - if:
+        condition:
+          lambda: |-               
+            return fabs((id(dispbr_full).state/100.0)-(id(backlight).current_values.get_brightness()))>0.001; 
+        then:      
+          - light.turn_on:
+              id: backlight
+              brightness: !lambda "return id(dispbr_full).state/100.0;"     
+              transition_length: 0s
+#-------------------------------------------    
+# Display st7701s spi
+#------------------------------------------- 
+spi:
+  - id: lcd_spi
+    clk_pin: GPIO48
+    mosi_pin: GPIO47
+
+display:
+  - platform: st7701s
+    id: my_display
+    update_interval: never
+    auto_clear_enabled: False
+    spi_mode: MODE3
+    data_rate: 2MHz
+    color_order: RGB
+    invert_colors: False
+    dimensions:
+      width: 480
+      height: 480
+    cs_pin: 39
+    de_pin: 18
+    hsync_pin: 16
+    vsync_pin: 17
+    pclk_pin: 21
+    pclk_frequency: 12MHz
+    pclk_inverted: False
+    hsync_pulse_width: 8
+    hsync_front_porch: 10
+    hsync_back_porch: 20
+    vsync_pulse_width: 8
+    vsync_front_porch: 10
+    vsync_back_porch: 10
+    init_sequence:
+      - 1
+      # Custom sequences are an array, first byte is command, the rest are data.
+      - [0xFF, 0x77, 0x01, 0x00, 0x00, 0x10] # CMD2_BKSEL_BK0
+      - [0xCD, 0x00] # disable MDT flag
+    data_pins:
+      red:
+        - 11 #r1
+        - 12 #r2
+        - 13 #r3
+        - 14 #r4
+        - 0 #r5
+      green:
+        - 8 #g0
+        - 20 #g1
+        - 3 #g2
+        - 46 #g3
+        - 9 #g4
+        - 10 #g5
+      blue:
+        - 4 #b1
+        - 5 #b2
+        - 6 #b3
+        - 7 #b4
+        - 15 #b5
+
+#-------------------------------------------
+# LVGL
+#-------------------------------------------
+lvgl:
+  displays:
+    - my_display
+  touchscreens:
+    - my_touchscreen
+  on_idle:
+    - timeout: !lambda "return (id(dimming_timeout).state*1000);"
+      then:
+        - logger.log: idle timeout
+        - if:
+            condition:
+              lvgl.is_idle:
+                timeout: 5s
+            then:
+              - logger.log: LVGL is idle
+              - light.turn_on:
+                  id: backlight
+                  brightness: !lambda "return id(dispbr_dimmed).state/100.0;" 
+
+    - timeout: !lambda "return (id(turns_off_timeout).state*1000);"
+      then:
+        - logger.log: idle 15s timeout
+        #- lvgl.pause:
+        - light.turn_off:
+            id: backlight
+            transition_length: 5s
+  on_resume:
+    - logger.log: LVGL is resumed by touch screen
+    - light.turn_on:
+        id: backlight
+        brightness: !lambda "return id(dispbr_full).state/100.0;" 
+
+  theme:
+    buttonmatrix:
+      bg_opa: TRANSP
+      border_color: 0x0077b3
+      border_width: 0
+      text_color: 0xFFFFFF
+      pad_all: 0
+      items: # set all your buttonmatrix buttons to use your custom defined styles and font
+        bg_color: 0x2F8CD8
+        bg_grad_color: 0x005782
+        bg_grad_dir: VER
+        bg_opa: COVER
+        border_color: 0x0077b3
+        border_width: 1
+        text_color: 0xFFFFFF
+        text_font: font_text
+        pressed:
+          bg_color: 0x006699
+          bg_grad_color: 0x00334d
+ 
+
+  page_wrap: false
+  disp_bg_color: color_lockscreen
+  disp_bg_image: bg_main  
+  bg_image_src: bg_main
+  top_layer:
+    widgets:
+      - label:
+          id: wifi_status
+          align: TOP_RIGHT
+          text: "${wifi_0}"
+          text_color: color_inactive
+          text_font: smallicon
+          on_short_click:
+            - lvgl.page.show: 
+                id: page_config
+                animation: MOVE_BOTTOM
+                time: 300ms 
+          on_long_press:
+            - lambda: id(lock_mode)=true;
+            - lvgl.widget.hide:
+                id: wifi_status
+            - lvgl.widget.show:
+                id: lock_status
+            - lvgl.page.show:
+                id: page_lockscreen
+      - label:
+          id: lock_status
+          align: TOP_RIGHT
+          text: "${lock}"
+          text_color: color_inactive
+          text_font: smallicon
+          hidden: true 
+          on_long_press:
+            - lambda: id(lock_mode)=false;
+            - lvgl.widget.show:
+                id: wifi_status
+            - lvgl.widget.hide:
+                id: lock_status
+            - lvgl.page.show:
+                id: page_main
+      - label:
+          id: ha_status
+          align: TOP_RIGHT
+          x: -35
+          #y: 5
+          text: "${ha}"
+          text_color: color_inactive
+          text_font: smallicon
+
+  pages:
+    # Основной экран
+    - id: page_main
+      bg_opa: COVER 
+      bg_image_src: bg_main    
+      #skip: true
+      #layout:
+      #  type: flex
+      #  flex_flow: column_wrap
+      width:      100%
+      height:     100%
+      pad_top:      30 
+      pad_bottom:   10
+      pad_left:     10
+      pad_right:    10
+      scrollable : false   
+
+      widgets:
+        - obj: # Блок взаимодействия с выключателями
+            x: 0
+            y: 10
+            align: TOP_MID
+            border_width: 0
+            width: 100%
+            height: 160
+            bg_opa: TRANSP
+            pad_all: 0
+            layout:
+              type: GRID
+              grid_rows: [100%]
+              grid_columns: [FR(1),FR(1),FR(1)]            
+              pad_row: 0
+              pad_column: 10   
+            widgets:
+              - obj:
+                  id: switch1_iconarea
+                  radius: 15                
+                  grid_cell_row_pos: 0
+                  grid_cell_column_pos: 0
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH 
+                  border_width: 0
+                  pad_all: 0
+                  bg_color: color_panelarea
+                  bg_opa: 50% 
+                  layout:
+                    type: GRID
+                    grid_rows: [FR(3),FR(1)]
+                    grid_columns: [100%]            
+                    pad_row: 0
+                    pad_column: 0            
+                  on_press:
+                    - switch.toggle:
+                        id: internal_relay1   
+                    # Подсветим фон сенсора на экране для обратной связи
+                    - lvgl.obj.update: 
+                        id: switch1_iconarea
+                        bg_opa: 30%
+                        bg_color: color_amber
+                  on_release:
+                    # Уберем подсветку фона сенсора на экране для обратной связи                    
+                    - lvgl.obj.update: 
+                        id: switch1_iconarea
+                        bg_color: color_panelarea
+                        bg_opa: 50%
+                  widgets:
+                    - label:
+                        id: switch1_label
+                        border_color: color_neutralline
+                        border_width: 0
+                        pad_bottom: 10
+                        text_font: bigicon
+                        text_color: color_passive
+                        text: "${switch_off}"
+                        text_align: CENTER
+                        grid_cell_row_pos: 0
+                        grid_cell_column_pos: 0
+                        grid_cell_x_align: STRETCH
+                        grid_cell_y_align: END 
+                        bg_color: color_amber
+                    - label:
+                        id: switch1_label2
+                        border_color: color_neutralline
+                        border_width: 0
+                        pad_all: 0
+                        text_font: font_text
+                        text_color: color_passive
+                        text: "${label_switch1}"
+                        text_align: CENTER
+                        grid_cell_row_pos: 1
+                        grid_cell_column_pos: 0
+                        grid_cell_x_align: STRETCH
+                        grid_cell_y_align: START
+                        bg_color: color_amber
+              - obj:
+                  id: switch2_iconarea
+                  radius: 15                
+                  grid_cell_row_pos: 0
+                  grid_cell_column_pos: 1
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH 
+                  border_width: 0
+                  pad_all: 0
+                  bg_color: color_panelarea
+                  bg_opa: 50% 
+                  layout:
+                    type: GRID
+                    grid_rows: [FR(3),FR(1)]
+                    grid_columns: [100%]            
+                    pad_row: 0
+                    pad_column: 0            
+                  on_press:
+                    - switch.toggle:
+                        id: internal_relay2
+                    # Подсветим фон сенсора на экране для обратной связи
+                    - lvgl.obj.update: 
+                        id: switch2_iconarea
+                        bg_opa: 30%
+                        bg_color: color_amber
+                  on_release:
+                    # Уберем подсветку фона сенсора на экране для обратной связи                    
+                    - lvgl.obj.update: 
+                        id: switch2_iconarea
+                        bg_color: color_panelarea
+                        bg_opa: 50%
+                  widgets:
+                    - label:
+                        id: switch2_label
+                        border_color: color_neutralline
+                        border_width: 0
+                        pad_bottom: 10
+                        text_font: bigicon
+                        text_color: color_passive
+                        text: "${switch_off}"
+                        text_align: CENTER
+                        grid_cell_row_pos: 0
+                        grid_cell_column_pos: 0
+                        grid_cell_x_align: STRETCH
+                        grid_cell_y_align: END 
+                        bg_color: color_amber
+                    - label:
+                        id: switch2_label2
+                        border_color: color_neutralline
+                        border_width: 0
+                        pad_all: 0
+                        text_font: font_text
+                        text_color: color_passive
+                        text: "${label_switch2}"
+                        text_align: CENTER
+                        grid_cell_row_pos: 1
+                        grid_cell_column_pos: 0
+                        grid_cell_x_align: STRETCH
+                        grid_cell_y_align: START
+                        bg_color: color_amber
+
+              - obj:
+                  id: switch3_iconarea
+                  radius: 15                
+                  grid_cell_row_pos: 0
+                  grid_cell_column_pos: 2
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH 
+                  border_width: 0
+                  pad_all: 0
+                  bg_color: color_panelarea
+                  bg_opa: 50% 
+                  layout:
+                    type: GRID
+                    grid_rows: [FR(3),FR(1)]
+                    grid_columns: [100%]            
+                    pad_row: 0
+                    pad_column: 0            
+                  on_press:
+                    - switch.toggle:
+                        id: internal_relay3
+                    # Подсветим фон сенсора на экране для обратной связи
+                    - lvgl.obj.update: 
+                        id: switch3_iconarea
+                        bg_opa: 30%
+                        bg_color: color_amber
+                  on_release:
+                    # Уберем подсветку фона сенсора на экране для обратной связи                    
+                    - lvgl.obj.update: 
+                        id: switch3_iconarea
+                        bg_color: color_panelarea
+                        bg_opa: 50%
+                  widgets:
+                    - label:
+                        id: switch3_label
+                        border_color: color_neutralline
+                        border_width: 0
+                        pad_bottom: 10
+                        text_font: bigicon
+                        text_color: color_passive
+                        text: "${switch_off}"
+                        text_align: CENTER
+                        grid_cell_row_pos: 0
+                        grid_cell_column_pos: 0
+                        grid_cell_x_align: STRETCH
+                        grid_cell_y_align: END 
+                        bg_color: color_amber
+                    - label:
+                        id: switch3_label2
+                        border_color: color_neutralline
+                        border_width: 0
+                        pad_all: 0
+                        text_font: font_text
+                        text_color: color_passive
+                        text: "${label_switch3}"
+                        text_align: CENTER
+                        grid_cell_row_pos: 1
+                        grid_cell_column_pos: 0
+                        grid_cell_x_align: STRETCH
+                        grid_cell_y_align: START
+                        bg_color: color_amber
+
+        - obj: # Область данных погоды
+            x: 0
+            y: 190
+            align: TOP_MID
+            border_width: 0
+            width: 100%
+            height: 170
+            bg_color: color_panelarea
+            bg_opa: 50% 
+            pad_all: 0
+            layout:
+              type: GRID
+              grid_rows: [100%]
+              grid_columns: [136, FR(1)]            
+              pad_row: 0
+              pad_column: 0            
+            widgets:
+              - obj: # Область иконки состояния и текущей температуры
+                  grid_cell_row_pos: 0
+                  grid_cell_column_pos: 0
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH 
+                  border_width: 0
+                  #bg_color: 0x200020
+                  bg_opa: TRANSP
+                  pad_all: 0
+                  layout:
+                    type: GRID
+                    grid_rows: [100,FR(1)]
+                    grid_columns: [FR(1)]            
+                    pad_row: 0
+                    pad_column: 0                    
+                  widgets:
+                    - label:
+                        id: weather
+                        grid_cell_row_pos: 0
+                        grid_cell_column_pos: 0
+                        grid_cell_x_align: CENTER
+                        grid_cell_y_align: CENTER 
+                        text_font: bigicon
+                        text_color: color_weather
+                        text: " "
+                        pad_bottom: 10
+                        pad_top: 10 
+                        pad_left: 0
+                        pad_right: 0
+                    - label:
+                        id: weathertemp
+                        grid_cell_row_pos: 1
+                        grid_cell_column_pos: 0
+                        grid_cell_x_align: CENTER
+                        grid_cell_y_align: CENTER 
+                        text: " "
+                        text_color: color_weathertext 
+                        text_font: font_clock
+                        border_width: 0
+                        pad_all: 0
+              - label:  
+                  id: weather_forecastnodata
+                  hidden: false
+                  grid_cell_row_pos: 0
+                  grid_cell_column_pos: 1
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: CENTER
+                  align: CENTER
+                  text_align: CENTER
+                  text: "Нет данных\nпрогноза погоды"
+                  text_color: color_weathertext
+                  text_font: font_text
+                  #opa: COVER                  
+              - obj: # Область графика-прогноза погоды
+                  id: weather_forecastchart
+                  hidden: false
+                  grid_cell_row_pos: 0
+                  grid_cell_column_pos: 1
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH 
+                  border_width: 0
+                  #bg_color: 0x202020
+                  bg_opa: TRANSP
+                  pad_all: 0
+                  layout:
+                    type: GRID
+                    grid_rows: [FR(1),FR(1),FR(2),FR(1)]
+                    grid_columns: [FR(1)]            
+                    pad_row: 0
+                    pad_column: 0                    
+                  widgets:
+                    - obj: # Фоновая зебра графика
+                        grid_cell_row_pos: 0
+                        grid_cell_column_pos: 0
+                        grid_cell_row_span: 4
+                        grid_cell_x_align: STRETCH
+                        grid_cell_y_align: STRETCH 
+                        border_width: 0
+                        #bg_color: 0x202020
+                        bg_opa: TRANSP
+                        pad_all: 0
+                        layout:
+                          type: GRID
+                          grid_rows: [FR(1)]
+                          grid_columns: [FR(1),FR(1),FR(1),FR(1),FR(1),FR(1),FR(1)]            
+                          pad_row: 0
+                          pad_column: 0                    
+                        widgets:
+                          - obj:
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 0
+                              grid_cell_x_align: STRETCH
+                              grid_cell_y_align: STRETCH 
+                              border_width: 0
+                              bg_color: color_weatherzebra
+                              bg_opa: 10%
+                              pad_all: 0
+                          - obj:
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 2
+                              grid_cell_x_align: STRETCH
+                              grid_cell_y_align: STRETCH 
+                              border_width: 0
+                              bg_color: color_weatherzebra
+                              bg_opa: 10%
+                              pad_all: 0
+                          - obj:
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 4
+                              grid_cell_x_align: STRETCH
+                              grid_cell_y_align: STRETCH 
+                              border_width: 0
+                              bg_color: color_weatherzebra
+                              bg_opa: 10%
+                              pad_all: 0
+                          - obj:
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 6
+                              grid_cell_x_align: STRETCH
+                              grid_cell_y_align: STRETCH 
+                              border_width: 0
+                              bg_color: color_weatherzebra
+                              bg_opa: 10%
+                              pad_all: 0
+                    - obj: # Секция значков погоды на графике
+                        grid_cell_row_pos: 0
+                        grid_cell_column_pos: 0
+                        grid_cell_x_align: STRETCH
+                        grid_cell_y_align: STRETCH 
+                        border_width: 0
+                        #bg_color: 0x202020
+                        bg_opa: TRANSP
+                        pad_all: 0
+                        layout:
+                          type: GRID
+                          grid_rows: [FR(1)]
+                          grid_columns: [FR(1),FR(1),FR(1),FR(1),FR(1),FR(1),FR(1)]            
+                          pad_row: 0
+                          pad_column: 0                    
+                        widgets:
+                          - label:
+                              id: weather_i_2
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 0
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: smallicon
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_i_4
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 1
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: smallicon
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_i_6
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 2
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: smallicon
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_i_8
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 3
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: smallicon
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_i_10
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 4
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: smallicon
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_i_12
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 5
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: smallicon
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_i_14
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 6
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: smallicon
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                    - obj: # Секция температуры в графике
+                        grid_cell_row_pos: 1
+                        grid_cell_column_pos: 0
+                        grid_cell_x_align: STRETCH
+                        grid_cell_y_align: STRETCH 
+                        border_width: 0
+                        #bg_color: 0x202020
+                        bg_opa: TRANSP
+                        pad_all: 0
+                        layout:
+                          type: GRID
+                          grid_rows: [FR(1)]
+                          grid_columns: [FR(1),FR(1),FR(1),FR(1),FR(1),FR(1),FR(1)]            
+                          pad_row: 0
+                          pad_column: 0                    
+                        widgets:
+                          - label:
+                              id: weather_t_2
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 0
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_t_4
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 1
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_t_6
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 2
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_t_8
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 3
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_t_10
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 4
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_t_12
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 5
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_t_14
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 6
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                    - line: # График прогноза погоды 
+                        id: weather_chart
+                        grid_cell_row_pos: 2
+                        grid_cell_column_pos: 0
+                        grid_cell_x_align: STRETCH
+                        grid_cell_y_align: STRETCH 
+                        #width: 100%
+                        #height: 150px
+                        border_color: color_neutralline
+                        border_width: 0
+                        points:
+                          - 0, 0
+                          #- 460, 148
+                        line_width: 2
+                        line_color: color_weatherchart
+                        line_rounded: true
+                    - obj: # Секция часов в графике
+                        grid_cell_row_pos: 3
+                        grid_cell_column_pos: 0
+                        grid_cell_x_align: STRETCH
+                        grid_cell_y_align: STRETCH 
+                        border_width: 0
+                        #bg_color: 0x202020
+                        bg_opa: TRANSP
+                        pad_all: 0
+                        layout:
+                          type: GRID
+                          grid_rows: [FR(1)]
+                          grid_columns: [FR(1),FR(1),FR(1),FR(1),FR(1),FR(1),FR(1)]            
+                          pad_row: 0
+                          pad_column: 0                    
+                        widgets:
+                          - label:
+                              id: weather_hr_2
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 0
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_hr_4
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 1
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_hr_6
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 2
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_hr_8
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 3
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_hr_10
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 4
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_hr_12
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 5
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+                          - label:
+                              id: weather_hr_14
+                              grid_cell_row_pos: 0
+                              grid_cell_column_pos: 6
+                              grid_cell_x_align: CENTER
+                              grid_cell_y_align: CENTER 
+                              text: " "
+                              text_color: color_weathertext
+                              text_font: font_text
+                              border_width: 0
+                              #bg_color: 0x002020
+                              #bg_opa: COVER
+                              pad_all: 0
+
+        #- image:
+        #    align: BOTTOM_RIGHT
+        #    src: img_calendar #img_month_1
+        #    opa: 40%
+        #    x: 10px
+        #    y: 10px     
+        - label:
+            id: display_monthday
+            #x: 7px
+            y: -20px     
+            width: 40px       
+            align: BOTTOM_RIGHT
+            text_align: CENTER
+            text: " "
+            text_color: color_calendar
+            text_font: font_calendar
+            opa: 70%
+            #transform_angle: 16
+        - label:
+            id: display_month
+            #x: 2px
+            y: 3px            
+            width: 40px       
+            align: BOTTOM_RIGHT
+            text_align: CENTER
+            text: " "
+            text_color: color_calendar
+            text_font: font_text
+            opa: 70%
+            #transform_angle: 16
+        - label:
+            id: display_time
+            x: -65px
+            y: -16px
+            align: BOTTOM_RIGHT
+            text_align: RIGHT
+            text: " "
+            text_color: color_clock
+            text_font: font_clock
+            opa: 60%
+        - label:
+            id: display_day
+            x: -65px
+            y: 3
+            align: BOTTOM_RIGHT
+            text_align: RIGHT
+            text: " "
+            text_color: color_clock
+            text_font: font_text
+            opa: 70%
+    # Экран блокировки (идея этого экрана не столько блокировка, сколько режим протирки экрана)
+    - id: page_lockscreen
+      skip: true
+      width: 100%
+      height: 100%
+      scrollbar_mode: 'off'
+      widgets:
+        # Outer Clock Container
+        - obj:
+            height: 470
+            width: 470
+            align: center
+            pad_all: 4
+            #bg_color: Black
+            bg_opa: TRANSP
+            border_width: 0  
+            widgets:
+            - meter:
+                height: 100%
+                width: 100%
+                align: center
+                #bg_color: White
+                bg_opa: TRANSP
+                border_width: 0
+                text_color: color_clock
+                text_font: font_calendar
+                scales:
+                  # Minor ticks
+                  - ticks:
+                      width: 2
+                      count: 61
+                      length: 10
+                      color: color_clock
+                    range_from: 0
+                    range_to: 60
+                    angle_range: 360
+                    rotation: 270
+
+                    # Minuite hand
+                    indicators:
+                      - line:
+                          id: minute_hand
+                          width: 3
+                          color: color_clock
+                          r_mod: -50
+                  # Major ticks
+                  #- angle_range: 330
+                  #  rotation: 300
+                  #  range_from: 1
+                  #  range_to: 12
+                  #  ticks:
+                  #    width: 3
+                  #    count: 12
+                  #    length: 20
+                  #    color:  color_clock                    
+
+                  - range_from: 1 # hours scale for labels
+                    range_to: 12
+                    angle_range: 330
+                    rotation: 300
+                    ticks:
+                      width: 1
+                      count: 12
+                      length: 1
+                      color:  color_clock
+                      major:
+                        stride: 1
+                        width: 4
+                        length: 10
+                        color: color_clock
+                        label_gap: 25
+                  # Hour hand
+                  - angle_range: 360
+                    rotation: 270
+                    range_from: 0
+                    range_to: 720
+                    indicators:
+                      - line:
+                          id: hour_hand
+                          width: 4
+                          color: color_clock
+                          r_mod: -70
+
+                  # Second hand
+                  - angle_range: 360
+                    rotation: 270
+                    range_from: 0
+                    range_to: 60
+                    indicators:
+                      - line:
+                          id: second_hand
+                          width: 2
+                          color: Red
+                          r_mod: -10      
+    # Экран конфигурации  
+    - id: page_config
+      bg_opa: COVER 
+      bg_image_src: bg_cfg    
+      pad_top:      30 
+      pad_bottom:   60
+      pad_left:     10
+      pad_right:    10
+      scrollable : false   
+      skip: true
+      width: 100%
+      height: 100%
+      #bg_color: 0x202020
+      #text_font: smallicon
+      #scrollbar_mode: 'off'
+      layout:
+        type: flex
+        flex_flow: ROW_WRAP
+      widgets:
+        - obj: # Блок данных об устройстве и сети
+            align: TOP_MID
+            border_width: 0
+            border_color: color_neutralline
+            width: 100%
+            #height: 88
+            bg_color: color_panelarea
+            bg_opa: 50%             
+            scrollable : false
+            layout:
+              type: GRID
+              #grid_rows: [22px, 22px, 22px, 22px]
+              grid_rows: [FR(1),FR(1),FR(1),FR(1)]
+              grid_columns: [FR(48), FR(2), FR(50)]            
+            widgets:
+              - label:
+                  text_font: font_text
+                  text_color: color_text
+                  text: "Устройство:"
+                  text_align: RIGHT 
+                  grid_cell_row_pos: 0
+                  grid_cell_column_pos: 0
+                  grid_cell_x_align: STRETCH
+              - label:
+                  text_font: font_text
+                  text_color: color_text
+                  text: "${name}"
+                  grid_cell_row_pos: 0
+                  grid_cell_column_pos: 2
+                  grid_cell_x_align: STRETCH
+              - label:
+                  text_font: font_text
+                  text_color: color_text
+                  text: "IP адрес:"
+                  text_align: RIGHT 
+                  grid_cell_row_pos: 1
+                  grid_cell_column_pos: 0
+                  grid_cell_x_align: STRETCH
+              - label:
+                  id: ip_address
+                  text_font: font_text
+                  text_color: color_text
+                  text: "???"
+                  grid_cell_row_pos: 1
+                  grid_cell_column_pos: 2
+                  grid_cell_x_align: STRETCH
+              - label:
+                  text_font: font_text
+                  text_color: color_text
+                  text: "MAC адрес:"
+                  text_align: RIGHT 
+                  grid_cell_row_pos: 2
+                  grid_cell_column_pos: 0
+                  grid_cell_x_align: STRETCH
+              - label:
+                  id: wifi_mac
+                  text_font: font_text
+                  text_color: color_text
+                  text: "???"
+                  grid_cell_row_pos: 2
+                  grid_cell_column_pos: 2
+                  grid_cell_x_align: STRETCH
+              - label:
+                  text_font: font_text
+                  text_color: color_text
+                  text: "SSID:"
+                  text_align: RIGHT 
+                  grid_cell_row_pos: 3
+                  grid_cell_column_pos: 0
+                  grid_cell_x_align: STRETCH
+              - label:
+                  id: wifi_ssid
+                  text_font: font_text
+                  text_color: color_text
+                  text: "???"
+                  grid_cell_row_pos: 3
+                  grid_cell_column_pos: 2
+                  grid_cell_x_align: STRETCH
+        - obj:
+            align: TOP_MID
+            border_width: 0
+            border_color: color_neutralline
+            width: 100%
+            height: SIZE_CONTENT
+            #bg_color: color_panelarea
+            bg_opa: TRANSP
+            scrollable : false
+            pad_all: 0
+            #scrollbar_mode: AUTO
+            layout:
+              type: GRID
+              grid_rows: [45px,45px,45px,45px]
+              grid_columns: [FR(58),FR(2),FR(40)]
+              grid_row_align: CENTER
+              grid_column_align: CENTER
+            widgets:
+              - label:
+                  text_font: font_text
+                  text_color: color_text
+                  text: "Приглушить через сек.:"
+                  text_align: RIGHT 
+                  align: CENTER
+                  grid_cell_row_pos: 0
+                  grid_cell_column_pos: 0
+                  grid_cell_x_align: STRETCH
+                  pad_top: 4
+                  pad_bottom: 3
+              - obj: # Насипрйки таймаута приглушения подсветки экрана
+                  border_width: 0
+                  align: CENTER
+                  grid_cell_column_pos: 2
+                  grid_cell_row_pos: 0
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  bg_opa: TRANSP
+                  layout:
+                    type: FLEX
+                    flex_flow: ROW
+                    flex_align_cross: CENTER  
+                  width: 100%
+                  height: SIZE_CONTENT
+                  pad_all: 0
+                  scrollable : false
+                  widgets:
+                    - label:
+                        text_align: CENTER
+                        text: "-"
+                        text_color: color_passive
+                        text_font: font_text
+                        border_color: color_passive
+                        border_width: 1
+                        radius: 10
+                        pad_left: 0
+                        pad_right: 0
+                        width: 25%
+                        pad_top: 5
+                        pad_bottom: 5
+                        on_click:
+                          - number.decrement:
+                              id: dimming_timeout
+                    - label:
+                        id: dimming_timeout_label 
+                        text_font: font_text
+                        text_color: color_amber
+                        text_align: CENTER
+                        width: 39%
+                    - label:
+                        text_align: CENTER
+                        text: "+"
+                        text_color: color_passive
+                        text_font: font_text
+                        border_color: color_passive
+                        border_width: 1
+                        radius: 10
+                        pad_left: 0
+                        pad_right: 0
+                        width: 25%
+                        pad_top: 5
+                        pad_bottom: 5
+                        on_click:
+                          - number.increment:
+                              id: dimming_timeout
+              - label:
+                  text_font: font_text
+                  text_color: color_text
+                  text: "Выключить через сек.:"
+                  text_align: RIGHT 
+                  grid_cell_row_pos: 1
+                  grid_cell_column_pos: 0
+                  grid_cell_x_align: STRETCH
+                  pad_top: 5
+                  pad_bottom: 5
+              - obj: # Насипрйки таймаута отключения подсветки экрана
+                  border_width: 0
+                  align: CENTER
+                  grid_cell_column_pos: 2
+                  grid_cell_row_pos: 1
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: STRETCH
+                  bg_opa: TRANSP
+                  layout:
+                    type: FLEX
+                    flex_flow: ROW
+                    flex_align_cross: CENTER  
+                  width: 100%
+                  height: SIZE_CONTENT
+                  pad_all: 0
+                  scrollable : false
+                  widgets:
+                    - label:
+                        text_align: CENTER
+                        text: "-"
+                        text_color: color_passive
+                        text_font: font_text
+                        border_color: color_passive
+                        border_width: 1
+                        radius: 10
+                        pad_left: 0
+                        pad_right: 0
+                        width: 25%
+                        pad_top: 5
+                        pad_bottom: 5
+                        on_click:
+                          - number.decrement:
+                              id: turns_off_timeout
+                    - label:
+                        id: turns_off_timeout_label 
+                        text_font: font_text
+                        text_color: color_amber
+                        text_align: CENTER
+                        width: 39%
+                    - label:
+                        text_align: CENTER
+                        text: "+"
+                        text_color: color_passive
+                        text_font: font_text
+                        border_color: color_passive
+                        border_width: 1
+                        radius: 10
+                        pad_left: 0
+                        pad_right: 0
+                        width: 25%
+                        pad_top: 5
+                        pad_bottom: 5
+                        on_click:
+                          - number.increment:
+                              id: turns_off_timeout
+              - label:
+                  text_font: font_text
+                  text_color: color_text
+                  text: "Приглушенная яркость:"
+                  text_align: RIGHT 
+                  grid_cell_row_pos: 2
+                  grid_cell_column_pos: 0
+                  grid_cell_x_align: STRETCH
+                  pad_top: 5
+                  pad_bottom: 5
+              - slider: # Слайдер настройки пришлкшенной яркости
+                  id: scdimmer_slider
+                  grid_cell_row_pos: 2
+                  grid_cell_column_pos: 2
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: CENTER 
+                  radius: 20
+                  bg_color: 0x808080
+                  align: CENTER
+                  width: 100%
+                  height: 25px
+                  min_value: 30
+                  max_value: 100
+                  indicator:
+                    bg_color: color_amber
+                    radius: 5
+                  knob:
+                    bg_opa: TRANSP
+                  on_change:
+                    - light.turn_on:
+                        id: backlight
+                        brightness: !lambda "return x/100.0;"     
+                        transition_length: 0s
+                  on_release:  
+                    - number.set:
+                        id: dispbr_dimmed                    
+                        value:  !lambda return x;
+              - label:
+                  text_font: font_text
+                  text_color: color_text
+                  text: "Полная яркость:"
+                  text_align: RIGHT 
+                  grid_cell_row_pos: 3
+                  grid_cell_column_pos: 0
+                  grid_cell_x_align: STRETCH
+                  pad_top: 5
+                  pad_bottom: 5
+              - slider: # Слайдер настройки полной яркости
+                  id: scfull_slider
+                  grid_cell_row_pos: 3
+                  grid_cell_column_pos: 2
+                  grid_cell_x_align: STRETCH
+                  grid_cell_y_align: CENTER 
+                  radius: 20
+                  bg_color: 0x808080
+                  align: CENTER
+                  width: 100%
+                  height: 25px
+                  min_value: 30
+                  max_value: 100
+                  indicator:
+                    bg_color: color_amber
+                    radius: 5
+                  knob:
+                    bg_opa: TRANSP
+                  on_change:
+                    - light.turn_on:
+                        id: backlight
+                        brightness: !lambda "return x/100.0;"     
+                        transition_length: 0s
+                  on_release:  
+                    - number.set:
+                        id: dispbr_full                    
+                        value:  !lambda return x;
+        # Эта матрица кнопок выведена за основной лайаут станицы и игнорирует ее скроллирование 
+        - buttonmatrix:  
+            y: 50
+            ignore_layout: true 
+            width: 100%
+            height: 40
+            align: BOTTOM_MID
+            text_font: font_text
+            items:
+              pressed:
+                bg_color: 0xFFFF00
+            rows:
+              - buttons:
+                  - text: "Перезагрузить"
+                    control:
+                      no_repeat: true
+                    on_click:
+                      switch.toggle: devrestart
+                  - text: "Вернуться"
+                    control:
+                      no_repeat: true
+                    on_click:
+                      - lvgl.page.show: 
+                          id: page_main
+                          animation: OUT_TOP
+                          time: 300ms 
+
